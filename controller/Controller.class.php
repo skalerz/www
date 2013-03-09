@@ -2,16 +2,18 @@
 
 class Controller {
   
+  private $page = null; // Je déclare une nouvelle variable pour mon controleur. De sorte que je n'ai plus a la passer en argument, elle sera automatiquement disponible dans toutes les fonctions de mon instance de classe
+  
   public function process(){
 
-    $page = $_GET['page'];
-    $name = $_GET['name'];
-
-    $check=$this->checkUserName($name);
-    $params=array("user" => $check["user"]);
-
-    if (1 == $check["ok"]){
-      switch ($page) {
+    // Sur quelle page sommes-nous ?
+    $this->page = isset($_GET['page'])?trim($_GET['page']):"error";
+    
+    // Vérifie l'utilisateur
+    $user = $this->checkUserName($_GET['name']);
+    $params = array("user" => $user);
+    if (!is_null($user)){
+      switch ($this->page) {
         case 'home':
           $this->processHome();
           break;
@@ -19,58 +21,56 @@ class Controller {
           $this->processContact();
           break;      
         default:
-          $page = 'error';
           $this->processError();
           break;
       }
     }
 
     else {
-      $page="error";
       $this->processError();
     }
-    
-    $this->render($page, $params);
+   
+    $this->render($params); // J'ai enlevé page, car c'est une propriété de l'objet maintenant
 
   }
 
-  public function checkUserName($username){
-    
-    $isOk=0;
-    $user = new User();
-    if ("Ben" == $username || "Cyril" == $username) {
-      $isOk=1;
-      $user->setName($username);
-      $user->setEmail("myAss@" . $user->getName() . ".com");
+  private function checkUserName($username){ // pas besoin d'etre publique ...
+
+    $user = null;
+  
+    if ("Ben" === $username || "Cyril" === $username) { // la triple égalité est toujours préférable
+      $user = new User();
+      $user->setName($username)->setEmail("myAss@" . strtolower($user->getName()) . ".com"); // Grace au fait que les fonctions setXX() retournent l'objet, on peut chainer les appels
     }
     
-    return array("user" => $user, "ok" => $isOk);
+    return $user; 
   }
 
 
-  public function processHome(){
+  private function processHome(){
             
     return ;
 
   }
 
-  public function processContact(){
+  private function processContact(){
     
     return ;
 
   }
 
-  public function processError(){
+  private function processError(){
+    $this->page="error";
 
     return ;
 
   }
 
-  public function render($page, $params)
+  private function render($params)
   {
 
     ob_start();
-    include('vue/' . $page . '.php' );
+    include('vue/' . $this->page . '.php' );
     $content = ob_get_contents();
     ob_end_clean();
 
